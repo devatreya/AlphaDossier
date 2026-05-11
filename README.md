@@ -1,8 +1,8 @@
-# AI-quant
+# AlphaDossier
 
 Analyst-in-the-loop AI research copilot for UK and US public-market investors.
 
-Given a ticker, AI-quant produces a cited research dossier (executive summary, bull/bear, catalysts, risks, disconfirming evidence, recent news, macro context, disclosure/RNS evidence, basic price/risk sanity check). Every claim is grounded in a retrievable source chunk; numbers without sources are marked `[UNSOURCED]`.
+Given a ticker, AlphaDossier produces a cited research dossier (executive summary, bull/bear, catalysts, risks, disconfirming evidence, recent news, macro context, disclosure/RNS evidence, basic price/risk sanity check). Every claim is grounded in a retrievable source chunk; numbers without sources are marked `[UNSOURCED]`.
 
 This is a research tool, not investment advice.
 
@@ -26,7 +26,7 @@ scripts          Demo seeding, smoke tests
 pyproject.toml   Backend Python project (root)
 ```
 
-## Phase 1: getting started
+## Getting started
 
 ### 1. Configure environment (two files)
 
@@ -45,7 +45,7 @@ The two files are split because Next.js requires `NEXT_PUBLIC_` prefixes on any 
 
 `SUPABASE_SERVICE_ROLE_KEY` and `DATABASE_URL` stay backend-only.
 
-To run Phase 1 (health endpoint + frontend boot) you need at minimum: `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`.
+To boot the stack you need at minimum: `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`. To actually run the orchestrator end-to-end you'll also need `ANTHROPIC_API_KEY`, `VOYAGE_API_KEY`, `NEWS_API_KEY`, and `FRED_API_KEY`; missing keys degrade gracefully (the orchestrator marks the relevant agent or connector unavailable, audits it, and proceeds).
 
 ### 2. Apply the database migration
 
@@ -95,19 +95,22 @@ mypy .                                    # backend type-check
 ( cd apps/web && npm run typecheck )      # frontend types
 ( cd apps/web && npm run build )          # frontend build
 ( cd apps/web && npm run lint )           # frontend lint (non-interactive)
+( cd apps/web && npm test )               # component tests (vitest)
 ```
 
 `npm run lint` is non-interactive — `apps/web/.eslintrc.json` is checked in so Next's setup prompt never fires.
 
+Current state: **185 backend tests + 18 component tests** passing, ruff and mypy clean across the backend, frontend typecheck/lint/build clean.
+
 ## Build phases
 
-- **Phase 1** — scaffold (current): Next.js + FastAPI + Supabase + DB migration + split health/readiness
-- **Phase 2** — source connectors (SEC, RNS, FCA NSM, IR, News API, FRED, ONS, prices)
-- **Phase 3** — document store, chunker, embedder, retriever, citations
-- **Phase 4** — Claude research agents + orchestrator + synthesizer
-- **Phase 5** — thesis viewer, citation popover, audit page (and a cookie-aware Supabase server client)
-- **Phase 6** — demo seed + smoke tests
+- **Phase 1** ✅ scaffold — Next.js + FastAPI + Supabase + DB migration + split health/readiness
+- **Phase 2** ✅ source connectors — SEC EDGAR, FCA NSM (stub), LSE RNS (proxy via News API), company IR, News API, FRED, ONS, prices (Yahoo + Stooq fallback)
+- **Phase 3** ✅ ingest — pgvector schema, chunker (HTML/PDF/text), Voyage embedder, retriever, citation persistence with heuristic validator
+- **Phase 4** ✅ agents — eleven LLM agents (news, disclosure, uk_rns, earnings_reviewer, market_research, macro, uk_macro, valuation, thesis_tracker, synthesizer) + two computational agents (price, quant_validation) + orchestrator with parallel ingestion, region-aware fan-out, and `validate_citation` runs before persist
+- **Phase 5** ✅ web — thesis HTTP API, thesis viewer with abort-controller-guarded polling, citation popover, per-thesis audit page, demo route with a prebuilt NVDA dossier, vitest component tests
+- **Phase 6** — not started: Python smoke-test scripts (`scripts/seed_demo.py`, `scripts/smoke_test.py`), cookie-aware Supabase SSR client for auth, additional demo dossiers (UK example)
 
 ## Disclaimer
 
-AI-quant is a research prototype. Output may be incomplete or wrong. Do not act on it without independent analyst review.
+AlphaDossier is a research prototype. Output may be incomplete or wrong. Do not act on it without independent analyst review.
